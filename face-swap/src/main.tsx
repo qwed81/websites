@@ -332,7 +332,7 @@ function App() {
       <div className="max-w-4xl w-full mx-auto p-6 flex-grow">
         <h1 className="text-4xl font-bold text-center text-white mb-8 flex items-center justify-center">
           <span className="mr-2">脸幻</span>
-          <span className="text-xl text-slate-400">(jiāohuàn) Face</span>
+          <span className="text-xl text-slate-400">(Liǎnhuàn) Face Swap</span>
         </h1>
 
         <div className={`flex ${isPortrait ? 'flex-col' : 'flex-row'} gap-6 items-center justify-center`}>
