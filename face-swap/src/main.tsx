@@ -1,6 +1,6 @@
 import React, { StrictMode, useState, useEffect, useRef } from 'react';
-import { Upload, Image, Download, ArrowRight, ArrowDown } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Upload, Image as IconImage, Download, ArrowRight, ArrowDown } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { createRoot } from 'react-dom/client'
 import './index.css'
 
@@ -29,6 +29,44 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
   isProcessing = false
 }) => {
   const [presetOpen, setPresetOpen] = useState(false);
+  const [isSelected, setIsSelected] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+
+
+  useEffect(() => {
+    if (!isSelected || isDownloadable) return;
+
+    const handlePaste = async (e: ClipboardEvent) => {
+      e.preventDefault();
+
+      // Handle pasted image file
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            const imageSrc = URL.createObjectURL(file);
+            onImageSelect(index, imageSrc);
+            break;
+          }
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [isSelected, isDownloadable, index, onImageSelect]);
+
+  useEffect(() => {
+    if (copyStatus !== 'idle') {
+      const timer = setTimeout(() => setCopyStatus('idle'), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [copyStatus]);
 
   function onFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -43,13 +81,51 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
     onImageSelect(index, imageSrc);
   }
 
+  const setCanvasImage = (path: string): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const canvas = canvasRef.current!;
+      const ctx = canvas.getContext('2d')!;
+
+      img.onload = function() {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(blob => {
+          resolve(blob!);
+        }, 'image/png');
+      };
+      img.src = path;
+    });
+  };
+
+  async function handleCopyImage() {
+    if (!imageSrc) return;
+
+    try {
+      const pngBlob = await setCanvasImage(imageSrc);
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'image/png': pngBlob
+        })
+      ]);
+      setCopyStatus('copied');
+    } catch (err) {
+      console.error('Failed to copy image:', err);
+      setCopyStatus('error');
+    }
+  }
   return (
     <>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.2 }}
-        className="bg-slate-800 rounded-xl overflow-hidden shadow-md w-full"
+        className={`bg-slate-800 rounded-xl overflow-hidden shadow-md w-full 
+          ${isSelected && !isDownloadable ? 'ring-2 ring-sky-500' : ''}`}
+        onClick={() => setIsSelected(true)}
+        onBlur={() => setIsSelected(false)}
+        tabIndex={isDownloadable ? undefined : 0}
       >
         <div className="aspect-square bg-slate-700 flex items-center justify-center">
           {imageSrc ? (
@@ -59,26 +135,50 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="text-slate-400 text-center">
+            <div className="text-slate-400 text-center p-4">
               {isDownloadable ? (
                 isProcessing ? "Processing..." : "Face swap result"
               ) : (
-                "No image selected"
+                <>
+                  <p>No image selected</p>
+                  {isSelected && !isDownloadable && (
+                    <p className="text-sm mt-2 text-slate-500">You can paste an image here (Ctrl+V)</p>
+                  )}
+                </>
               )}
             </div>
           )}
         </div>
 
         {isDownloadable ? (
-          <button
-            onClick={onDownload}
-            disabled={!imageSrc || isProcessing}
-            className="w-full bg-indigo-500 text-white py-3 px-4 rounded-b-lg hover:bg-indigo-600 transition-colors 
-              disabled:bg-slate-300 disabled:cursor-not-allowed 
-              flex items-center justify-center"
-          >
-            <Download className="mr-2" size={20} /> Download
-          </button>
+          <div className="grid grid-cols-2 gap-2 p-2">
+            <button
+              onClick={onDownload}
+              disabled={!imageSrc || isProcessing}
+              className="bg-indigo-500 text-white py-3 px-4 rounded-lg hover:bg-indigo-600 
+                transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed 
+                flex items-center justify-center"
+            >
+              Download
+            </button>
+            <button
+              onClick={handleCopyImage}
+              disabled={!imageSrc || isProcessing}
+              className="bg-emerald-500 text-white py-3 px-4 rounded-lg hover:bg-emerald-600 
+                transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed 
+                flex items-center justify-center"
+            >
+              {copyStatus === 'copied' ? (
+                'Copied'
+              ) : copyStatus === 'error' ? (
+                'Failed to copy'
+              ) : (
+                <>
+                  Copy
+                </>
+              )}
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 p-4">
             <button
@@ -86,14 +186,14 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
               className="bg-emerald-500 text-white py-3 px-4 rounded-lg hover:bg-emerald-600 
                 transition-colors flex items-center justify-center"
             >
-              <Image className="mr-2" size={20} /> Preset
+               Preset
             </button>
             <label
               htmlFor={`upload${index}`}
               className="bg-sky-500 text-white py-3 px-4 rounded-lg hover:bg-sky-600 
                 transition-colors flex items-center justify-center cursor-pointer"
             >
-              <Upload className="mr-2" size={20} /> Upload
+              Upload
             </label>
             <input
               id={`upload${index}`}
@@ -104,6 +204,8 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
           </div>
         )}
       </motion.div>
+
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
 
       {presetOpen && (
         <div
@@ -140,7 +242,7 @@ function App() {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasError, setHasError] = useState(false);
-  
+
   // Keep track of the latest request to handle race conditions
   const latestRequestRef = useRef<number>(0);
 
@@ -148,11 +250,11 @@ function App() {
   useEffect(() => {
     const mediaQuery = window.matchMedia("(orientation: portrait)");
     setIsPortrait(mediaQuery.matches);
-    
+
     const handler = (e: MediaQueryListEvent) => {
       setIsPortrait(e.matches);
     };
-    
+
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
@@ -290,6 +392,7 @@ function App() {
               <div className="w-full md:w-1/3">
                 <ImageDisplay
                   key="result-display"
+                  onImageSelect={(_a, _b) => { }}
                   imageSrc={isProcessing ? null : resultImage}
                   index={2}
                   onDownload={downloadImage}
@@ -307,7 +410,7 @@ function App() {
           <p className="text-slate-300">
             Face Swap is a website built with React TypeScript and a Python FastAPI backend,
             created as part of our "website a week" challenge. It leverages a custom machine
-            learning model trained on the SMU superpod.
+            learning model trained on the SMU DGX SuperPod.
             <span className="block mt-2 text-sm text-slate-400">#OpenToWork</span>
           </p>
         </div>
