@@ -279,7 +279,7 @@ function App() {
           data.append('source_image', blob0);
           data.append('target_image', blob1);
 
-          const response = await fetch('http://localhost:8000/swap-face', {
+          const response = await fetch('https://faceswap.smartfellas.us/api/swap-face', {
             method: 'POST',
             body: data,
           });
