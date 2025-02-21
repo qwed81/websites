@@ -1,7 +1,8 @@
-import { StrictMode } from 'react'
+import React, { StrictMode, useState, useEffect, useRef } from 'react';
+import { ArrowRight, ArrowDown } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import { useState } from 'react'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -9,130 +10,413 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-let currentSelect = 0;
+type ImageDisplayProps = {
+  imageSrc: string | null;
+  index: number;
+  onImageSelect: (index: number, imageSrc: string) => void;
+  onDownload?: () => void;
+  isDownloadable?: boolean;
+  isProcessing?: boolean;
+  hasError?: boolean;
+};
 
-async function getPngBlob(url: string) {
-  try {
-    // Fetch the image
-    const response = await fetch(url);
-    
-    /*
-    // Check if the response is ok and is a PNG
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+const ImageDisplay: React.FC<ImageDisplayProps> = ({
+  imageSrc,
+  index,
+  onImageSelect,
+  onDownload,
+  isDownloadable = false,
+  isProcessing = false
+}) => {
+  const [presetOpen, setPresetOpen] = useState(false);
+  const [isSelected, setIsSelected] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+
+
+  useEffect(() => {
+    if (!isSelected || isDownloadable) return;
+
+    const handlePaste = async (e: ClipboardEvent) => {
+      e.preventDefault();
+
+      // Handle pasted image file
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            const imageSrc = URL.createObjectURL(file);
+            onImageSelect(index, imageSrc);
+            break;
+          }
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [isSelected, isDownloadable, index, onImageSelect]);
+
+  useEffect(() => {
+    if (copyStatus !== 'idle') {
+      const timer = setTimeout(() => setCopyStatus('idle'), 2000);
+      return () => clearTimeout(timer);
     }
-    if (!response.headers.get('content-type').includes('image/png')) {
-      throw new Error('Not a PNG image!');
-    */
-    
-    // Convert directly to Blob
-    const blob = await response.blob();
-    
-    return blob;
-  } catch (error) {
-    console.error('Error fetching PNG:', error);
-    throw error;
-  }
-}
+  }, [copyStatus]);
 
-function App() {
-  let [presetOpen, setPresetOpen] = useState(false);
-  let [selectedImages, setSelectedImage] = useState<[string | null, string | null]>([null, null]);
-  let [createdImage, setCreatedImage] = useState<string | null>(null);
-
-  async function onUploadOrPreset(selectedImage0: string | null, selectedImage1: string | null) {
-    if (selectedImage0 == null || selectedImage1 == null) return; 
-
-    let blob0 = await getPngBlob(selectedImage0);
-    let blob1 = await getPngBlob(selectedImage1);
-   
-    let data = new FormData();
-    data.append('source_image', blob0);
-    data.append('target_image', blob1);
-
-    const response = await fetch('http://localhost:8000/swap-face', {
-      method: 'POST',
-      body: data,
-    });
-    // Create URL from blob
-    const url = URL.createObjectURL(await response.blob());
-    setCreatedImage(url)
-  }
-
-  function onFileUpload(currentSelect: number, e: any) {
-    const file = e.target.files[0];
+  function onFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
     if (file) {
-        // Create a blob URL from the file
-        const imageSrc = URL.createObjectURL(file);
-        if (currentSelect == 0) {
-          setSelectedImage([imageSrc, selectedImages[1]]);
-          onUploadOrPreset(imageSrc, selectedImages[1]);
-        }
-        else {
-          setSelectedImage([selectedImages[0], imageSrc]);
-          onUploadOrPreset(selectedImages[0], imageSrc);
-        }
+      const imageSrc = URL.createObjectURL(file);
+      onImageSelect(index, imageSrc);
     }
-  }
-
-  function onPresetMenuOpen(id: number) {
-    currentSelect = id;
-    setPresetOpen(true);
   }
 
   function onPresetSelection(imageSrc: string) {
     setPresetOpen(false);
-    if (currentSelect == 0) {
-      setSelectedImage([imageSrc, selectedImages[1]]);
-      onUploadOrPreset(imageSrc, selectedImages[1]);
+    onImageSelect(index, imageSrc);
+  }
+
+  const setCanvasImage = (path: string): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const canvas = canvasRef.current!;
+      const ctx = canvas.getContext('2d')!;
+
+      img.onload = function() {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(blob => {
+          resolve(blob!);
+        }, 'image/png');
+      };
+      img.src = path;
+    });
+  };
+
+  async function handleCopyImage() {
+    if (!imageSrc) return;
+
+    try {
+      const pngBlob = await setCanvasImage(imageSrc);
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'image/png': pngBlob
+        })
+      ]);
+      setCopyStatus('copied');
+    } catch (err) {
+      console.error('Failed to copy image:', err);
+      setCopyStatus('error');
     }
-    else {
-      setSelectedImage([selectedImages[0], imageSrc]);
-      onUploadOrPreset(selectedImages[0], imageSrc);
+  }
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.2 }}
+        className={`bg-slate-800 rounded-xl overflow-hidden shadow-md w-full 
+          ${isSelected && !isDownloadable ? 'ring-2 ring-sky-500' : ''}`}
+        onClick={() => setIsSelected(true)}
+        onBlur={() => setIsSelected(false)}
+        tabIndex={isDownloadable ? undefined : 0}
+      >
+        <div className="aspect-square bg-slate-700 flex items-center justify-center">
+          {imageSrc ? (
+            <img
+              src={imageSrc}
+              alt="Selected image"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="text-slate-400 text-center p-4">
+              {isDownloadable ? (
+                isProcessing ? "Processing..." : "Face swap result"
+              ) : (
+                <>
+                  <p>No image selected</p>
+                  {isSelected && !isDownloadable && (
+                    <p className="text-sm mt-2 text-slate-500">You can paste an image here (Ctrl+V)</p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {isDownloadable ? (
+          <div className="grid grid-cols-2 gap-2 p-2">
+            <button
+              onClick={onDownload}
+              disabled={!imageSrc || isProcessing}
+              className="bg-indigo-500 text-white py-3 px-4 rounded-lg hover:bg-indigo-600 
+                transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed 
+                flex items-center justify-center"
+            >
+              Download
+            </button>
+            <button
+              onClick={handleCopyImage}
+              disabled={!imageSrc || isProcessing}
+              className="bg-emerald-500 text-white py-3 px-4 rounded-lg hover:bg-emerald-600 
+                transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed 
+                flex items-center justify-center"
+            >
+              {copyStatus === 'copied' ? (
+                'Copied'
+              ) : copyStatus === 'error' ? (
+                'Failed to copy'
+              ) : (
+                <>
+                  Copy
+                </>
+              )}
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 p-4">
+            <button
+              onClick={() => setPresetOpen(true)}
+              className="bg-emerald-500 text-white py-3 px-4 rounded-lg hover:bg-emerald-600 
+                transition-colors flex items-center justify-center"
+            >
+               Preset
+            </button>
+            <label
+              htmlFor={`upload${index}`}
+              className="bg-sky-500 text-white py-3 px-4 rounded-lg hover:bg-sky-600 
+                transition-colors flex items-center justify-center cursor-pointer"
+            >
+              Upload
+            </label>
+            <input
+              id={`upload${index}`}
+              type="file"
+              className="hidden"
+              onChange={onFileUpload}
+            />
+          </div>
+        )}
+      </motion.div>
+
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+      {presetOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setPresetOpen(false)}
+        >
+          <div
+            className="bg-slate-800 p-6 rounded-xl shadow-2xl grid grid-cols-2 gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {[0, 1, 2, 3].map(x => {
+              const imgPath = `/face${x}.webp`;
+              return (
+                <img
+                  key={x}
+                  src={imgPath}
+                  alt={`Preset ${x + 1}`}
+                  className="w-40 h-40 object-cover rounded-lg cursor-pointer hover:scale-105 transition-transform"
+                  onClick={() => onPresetSelection(imgPath)}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+function App() {
+  const [isPortrait, setIsPortrait] = useState(false);
+  const [sourceImage, setSourceImage] = useState<string | null>(null);
+  const [destImage, setDestImage] = useState<string | null>(null);
+  const [resultImage, setResultImage] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  // Keep track of the latest request to handle race conditions
+  const latestRequestRef = useRef<number>(0);
+
+  // Handle orientation changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(orientation: portrait)");
+    setIsPortrait(mediaQuery.matches);
+
+    const handler = (e: MediaQueryListEvent) => {
+      setIsPortrait(e.matches);
+    };
+
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  // Improved face swap effect with race condition handling
+  useEffect(() => {
+    async function performFaceSwap() {
+      if (sourceImage && destImage) {
+        setIsProcessing(true);
+        const thisRequest = ++latestRequestRef.current;
+
+        try {
+          const blob0 = await fetch(sourceImage).then(r => r.blob());
+          const blob1 = await fetch(destImage).then(r => r.blob());
+
+          // Check if this is still the latest request
+          if (thisRequest !== latestRequestRef.current) {
+            return; // Abandon outdated requests
+          }
+
+          const data = new FormData();
+          data.append('source_image', blob0);
+          data.append('target_image', blob1);
+
+          const response = await fetch('http://localhost:8000/swap-face', {
+            method: 'POST',
+            body: data,
+          });
+
+          // Check again before updating state
+          if (thisRequest === latestRequestRef.current) {
+            if (!response.ok) {
+              throw new Error(`Server returned ${response.status}`);
+            }
+            const url = URL.createObjectURL(await response.blob());
+            setResultImage(url);
+            setHasError(false);
+          }
+        } catch (error) {
+          console.error('Face swap failed:', error);
+          if (thisRequest === latestRequestRef.current) {
+            setHasError(true);
+            setResultImage(null);
+          }
+        } finally {
+          if (thisRequest === latestRequestRef.current) {
+            setIsProcessing(false);
+          }
+        }
+      }
+    }
+
+    performFaceSwap();
+  }, [sourceImage, destImage]);
+
+  function handleImageSelect(index: number, imageSrc: string) {
+    if (index === 0) {
+      setSourceImage(imageSrc);
+    } else if (index === 1) {
+      setDestImage(imageSrc);
+    }
+  }
+
+  function downloadImage() {
+    if (resultImage) {
+      const link = document.createElement('a');
+      link.href = resultImage;
+      link.download = 'face-swapped-image.png';
+      link.click();
     }
   }
 
   return (
-    <>
-      <h1 className="text-3xl p-4 text-center">脸幻 (jiāohuàn) Face</h1>
-      <div className="grid gap-4 mx-4 grid-cols-3">
+    <div className="min-h-screen bg-slate-900 flex flex-col">
+      <div className="max-w-4xl w-full mx-auto p-6 flex-grow">
+        <h1 className="text-4xl font-bold text-center text-white mb-8 flex items-center justify-center">
+          <span className="mr-2">脸幻</span>
+          <span className="text-xl text-slate-400">(jiāohuàn) Face</span>
+        </h1>
 
-        {[0,1].map(id => (
-        <div className="grid grid-cols-2 grid-rows-[1fr_auto]">
-          <div className="bg-slate-950 border-1 border-slate-800 col-span-2">
-            {selectedImages[id] && <img className="w-full h-full object-cover" src={selectedImages[id]}/>}
+        <div className={`flex ${isPortrait ? 'flex-col' : 'flex-row'} gap-6 items-center justify-center`}>
+          {/* Source image - always visible */}
+          <div className="w-full md:w-1/3">
+            <ImageDisplay
+              key="source-display"
+              imageSrc={sourceImage}
+              index={0}
+              onImageSelect={handleImageSelect}
+            />
           </div>
-          <button className="bg-slate-950  border-1 border-slate-800 p-1" onClick={() => onPresetMenuOpen(id)}>Select Preset</button>
-          <label className="text-center align-center border-1 border-slate-800 p-1" htmlFor={"upload" + id}>Upload</label>
-          <input className="hidden" id={"upload" + id} type="file" onChange={e => onFileUpload(id, e)}></input>
-        </div>
-        ))}
 
-        <div className="grid grid-rows-[1fr_auto] bg-slate-950 border border-slate-800">
-          {!createdImage && <div className="h-64"></div>}
-          {createdImage && <img className="w-full h-full object-cover" src={createdImage}/>}
-          <button className="bg-slate-950  border-1 border-slate-800 p-1">Download</button>
+          {/* Arrow and destination image */}
+          {sourceImage && (
+            <>
+              <motion.div
+                key="arrow-1"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                {isPortrait ? (
+                  <ArrowDown className="mx-4 text-slate-400" size={32} />
+                ) : (
+                  <ArrowRight className="mx-4 text-slate-400" size={32} />
+                )}
+              </motion.div>
+
+              <div className="w-full md:w-1/3">
+                <ImageDisplay
+                  key="dest-display"
+                  imageSrc={destImage}
+                  index={1}
+                  onImageSelect={handleImageSelect}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Arrow and result image */}
+          {sourceImage && destImage && (
+            <>
+              <motion.div
+                key="arrow-2"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                {isPortrait ? (
+                  <ArrowDown className="mx-4 text-slate-400" size={32} />
+                ) : (
+                  <ArrowRight className="mx-4 text-slate-400" size={32} />
+                )}
+              </motion.div>
+
+              <div className="w-full md:w-1/3">
+                <ImageDisplay
+                  key="result-display"
+                  onImageSelect={(_a, _b) => { }}
+                  imageSrc={isProcessing ? null : resultImage}
+                  index={2}
+                  onDownload={downloadImage}
+                  isDownloadable
+                  isProcessing={isProcessing}
+                  hasError={hasError}
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="mt-8 bg-slate-800 p-4 rounded-xl">
+          <h2 className="text-xl font-semibold text-white mb-2">About Us</h2>
+          <p className="text-slate-300">
+            Face Swap is a website built with React TypeScript and a Python FastAPI backend,
+            created as part of our "website a week" challenge. It leverages a custom machine
+            learning model trained on the SMU DGX SuperPod.
+            <span className="block mt-2 text-sm text-slate-400">#OpenToWork</span>
+          </p>
         </div>
       </div>
-      <h2 className="text-lg mx-4 my-2">About Us</h2>
-      <p className="mx-4">
-        Face Swap is a website written with react typescript and a python fastapi backend as part of our
-        website a week challenge. 
-        It uses a custom machine learning model trained on the SMU superpod! For more information please contact us on linkedin.
-        #OpenToWork
-      </p>
-
-
-      {presetOpen &&
-      <div className="fixed top-0 left-0 w-screen h-screen flex justify-center align-center z-1000 bg-black" onClick={() => setPresetOpen(false)}>
-        <div className="bg-white p-1 round-lg relative flex" onClick={(e) => { e.stopPropagation() }}>
-          {[0, 1, 2, 3].map(x => {
-            let imgPath = '/face' + x + '.webp';
-            return <img className="h-32 w-32" src={imgPath} onClick={() => onPresetSelection(imgPath)}/>
-          })}
-        </div>
-      </div>
-      }
-    </>
-  )
+    </div>
+  );
 }
+
+export default App;
