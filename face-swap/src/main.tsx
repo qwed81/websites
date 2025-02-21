@@ -1,5 +1,5 @@
 import React, { StrictMode, useState, useEffect, useRef } from 'react';
-import { Plus, Equal } from 'lucide-react';
+import { ArrowUpDown, ArrowLeftRight, Plus, Equal } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { createRoot } from 'react-dom/client'
 import './index.css'
@@ -32,8 +32,6 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
   const [isSelected, setIsSelected] = useState(false);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-
 
   useEffect(() => {
     if (!isSelected || isDownloadable) return;
@@ -318,6 +316,13 @@ function App() {
     }
   }
 
+  function handleSwapImages() {
+    const tempSource = sourceImage;
+    setSourceImage(destImage);
+    setDestImage(tempSource);
+  }
+
+
   function downloadImage() {
     if (resultImage) {
       const link = document.createElement('a');
@@ -326,7 +331,6 @@ function App() {
       link.click();
     }
   }
-
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col">
       <div className="max-w-4xl w-full mx-auto p-6 flex-grow">
@@ -335,7 +339,7 @@ function App() {
           <span className="text-xl text-slate-400">(jiāohuàn) Face</span>
         </h1>
 
-        <div className={`flex ${isPortrait ? 'flex-col' : 'flex-row'} gap-6 items-center justify-center`}>
+        <div className={`flex ${isPortrait ? 'flex-col' : 'flex-row'} gap-6 items-center justify-center relative`}>
           {/* Source image - always visible */}
           <div className="w-full md:w-1/3">
             <ImageDisplay
@@ -349,14 +353,24 @@ function App() {
           {/* Arrow and destination image */}
           {sourceImage && (
             <>
-              <motion.div
-                key="plus"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <Plus className="mx-4 text-slate-400" size={32} />
-              </motion.div>
+              <div className="flex flex-col items-center">
+                {sourceImage && destImage && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors mb-2"
+                    onClick={handleSwapImages}
+                    title="Swap images"
+                  >
+                    {isPortrait ? (
+                      <ArrowUpDown className="text-slate-200" size={24} />
+                    ) : (
+                      <ArrowLeftRight className="text-slate-200" size={24} />
+                    )}
+                  </motion.button>
+                )}
+                <Plus className="text-slate-400" size={32} />
+              </div>
 
               <div className="w-full md:w-1/3">
                 <ImageDisplay
