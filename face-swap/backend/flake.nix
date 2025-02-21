@@ -29,6 +29,7 @@
             python3Packages.insightface
             
             python3Packages.pillow
+            python3Packages.pillow-heif
             python3Packages.uvicorn
             python3Packages.fastapi
             python3Packages.python-multipart

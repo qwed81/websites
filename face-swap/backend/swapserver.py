@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.responses import Response
 from PIL import Image
+from pillow_heif import register_heif_opener
 
 from futil import qswap
 import insightface
@@ -9,6 +10,7 @@ import numpy as np
 import uvicorn
 import io
 
+register_heif_opener()
 app = FastAPI()
 
 analyzer = insightface.app.FaceAnalysis(name="buffalo_l")
