@@ -1,5 +1,5 @@
 import React, { StrictMode, useState, useEffect, useRef } from 'react';
-import { ArrowRight, ArrowDown } from 'lucide-react';
+import { Plus, Equal } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { createRoot } from 'react-dom/client'
 import './index.css'
@@ -186,7 +186,7 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
               className="bg-emerald-500 text-white py-3 px-4 rounded-lg hover:bg-emerald-600 
                 transition-colors flex items-center justify-center"
             >
-               Preset
+              Preset
             </button>
             <label
               htmlFor={`upload${index}`}
@@ -350,16 +350,12 @@ function App() {
           {sourceImage && (
             <>
               <motion.div
-                key="arrow-1"
+                key="plus"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                {isPortrait ? (
-                  <ArrowDown className="mx-4 text-slate-400" size={32} />
-                ) : (
-                  <ArrowRight className="mx-4 text-slate-400" size={32} />
-                )}
+                <Plus className="mx-4 text-slate-400" size={32} />
               </motion.div>
 
               <div className="w-full md:w-1/3">
@@ -377,16 +373,12 @@ function App() {
           {sourceImage && destImage && (
             <>
               <motion.div
-                key="arrow-2"
+                key="equals"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 }}
               >
-                {isPortrait ? (
-                  <ArrowDown className="mx-4 text-slate-400" size={32} />
-                ) : (
-                  <ArrowRight className="mx-4 text-slate-400" size={32} />
-                )}
+                <Equal className="mx-4 text-slate-400" size={32} />
               </motion.div>
 
               <div className="w-full md:w-1/3">
