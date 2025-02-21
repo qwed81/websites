@@ -1,5 +1,5 @@
 import React, { StrictMode, useState, useEffect, useRef } from 'react';
-import { Upload, Image as IconImage, Download, ArrowRight, ArrowDown } from 'lucide-react';
+import { ArrowRight, ArrowDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { createRoot } from 'react-dom/client'
 import './index.css'
