@@ -259,7 +259,7 @@ function TeamProfiles() {
     {
       name: "Ben Teng",
       role: "Backend Developer",
-      image: "/api/placeholder/64/64",
+      image: "/benprofile.jpeg",
       links: [
         { type: "Github", url: "https://github.com/satedgami", icon: <Si.SiGithub size={20} /> },
         { type: "Email", url: "mailto:btpbenmrkin@gmail.com", icon: <Mail size={20} /> }
@@ -268,7 +268,7 @@ function TeamProfiles() {
     {
       name: "Pravin Ramana",
       role: "Full Stack Developer",
-      image: "/api/placeholder/64/64",
+      image: "/pravinprofile.jpeg",
       links: [
         { type: "Github", url: "https://github.com/pravinxor", icon: <Si.SiGithub size={20} /> },
         { type: "Email", url: "mailto:pravinramana25@protonmail.ch", icon: <Mail size={20} /> }
@@ -277,7 +277,7 @@ function TeamProfiles() {
     {
       name: "Joshua Cox",
       role: "Full Stack Developer",
-      image: "/api/placeholder/64/64",
+      image: "/joshprofile.jpeg",
       links: [
         { type: "Github", url: "https://github.com/qwed81", icon: <Si.SiGithub size={20} /> },
         { type: "Email", url: "#", icon: <Mail size={20} /> }
