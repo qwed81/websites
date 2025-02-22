@@ -1,16 +1,38 @@
 import React, { StrictMode, useState, useEffect, useRef } from 'react';
 import { ArrowUpDown, ArrowLeftRight, Plus, Equal } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { createRoot } from 'react-dom/client'
-import './index.css'
+import { createRoot } from 'react-dom/client';
+import { motion, AnimatePresence } from 'framer-motion';
+import './index.css';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'default' | 'file';
+  onFileSelect?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
 
-type ImageDisplayProps = {
+function Button({ children, variant = 'default', onFileSelect, className = '', disabled, ...props }: ButtonProps) {
+  const baseStyles = "bg-slate-400 text-slate-900 py-3 px-4 hover:bg-slate-300 flex items-center justify-center disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-700";
+
+  if (variant === 'file') {
+    return (
+      <label className={`${baseStyles} cursor-pointer ${disabled ? 'pointer-events-none' : ''} ${className}`}>
+        {children}
+        <input type="file" className="hidden" onChange={onFileSelect} disabled={disabled} />
+      </label>
+    );
+  }
+
+  return (
+    <button
+      className={`${baseStyles} ${className}`}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+interface ImageDisplayProps {
   imageSrc: string | null;
   index: number;
   onImageSelect: (index: number, imageSrc: string) => void;
@@ -18,16 +40,59 @@ type ImageDisplayProps = {
   isDownloadable?: boolean;
   isProcessing?: boolean;
   hasError?: boolean;
-};
+  errorMessage?: string;
+}
 
-const ImageDisplay: React.FC<ImageDisplayProps> = ({
+function SwapButton({ isPortrait, onClick }: { isPortrait: boolean; onClick: () => void }) {
+  return (
+    <Button
+      onClick={onClick}
+      title="Swap images"
+      className="p-2 bg-slate-800/30 hover:bg-slate-700/30 mb-2 backdrop-blur-sm border border-slate-700/30"
+    >
+      {isPortrait ? (
+        <ArrowUpDown className="text-slate-200" size={24} />
+      ) : (
+        <ArrowLeftRight className="text-slate-200" size={24} />
+      )}
+    </Button>
+  );
+}
+
+function PresetModal({ onClose, onPresetSelection }: { onClose: () => void, onPresetSelection: (imageSrc: string) => void }) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-slate-800/30 p-6 backdrop-blur-sm border border-slate-700/30 grid grid-cols-2 gap-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {[0, 1, 2, 3].map(x => (
+          <img
+            key={x}
+            src={`/face${x}.webp`}
+            alt={`Preset ${x + 1}`}
+            className="w-40 h-40 object-cover cursor-pointer hover:scale-105 transition"
+            onClick={() => onPresetSelection(`/face${x}.webp`)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ImageDisplay({
   imageSrc,
   index,
   onImageSelect,
   onDownload,
   isDownloadable = false,
-  isProcessing = false
-}) => {
+  isProcessing = false,
+  hasError = false,
+  errorMessage
+}: ImageDisplayProps) {
   const [presetOpen, setPresetOpen] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
@@ -38,8 +103,6 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
 
     const handlePaste = async (e: ClipboardEvent) => {
       e.preventDefault();
-
-      // Handle pasted image file
       const items = e.clipboardData?.items;
       if (!items) return;
 
@@ -79,53 +142,52 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
     onImageSelect(index, imageSrc);
   }
 
-  const setCanvasImage = (path: string): Promise<Blob> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      const canvas = canvasRef.current!;
-      const ctx = canvas.getContext('2d')!;
-
-      img.onload = function() {
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        ctx.drawImage(img, 0, 0);
-        canvas.toBlob(blob => {
-          resolve(blob!);
-        }, 'image/png');
-      };
-      img.src = path;
-    });
-  };
-
   async function handleCopyImage() {
     if (!imageSrc) return;
 
     try {
-      const pngBlob = await setCanvasImage(imageSrc);
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'image/png': pngBlob
-        })
-      ]);
-      setCopyStatus('copied');
+      const img = new Image();
+      const canvas = canvasRef.current!;
+      const ctx = canvas.getContext('2d')!;
+
+      img.onload = async () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+
+        const blob = await new Promise<Blob>((resolve) =>
+          canvas.toBlob(blob => resolve(blob!), 'image/png')
+        );
+
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        setCopyStatus('copied');
+      };
+      img.src = imageSrc;
     } catch (err) {
       console.error('Failed to copy image:', err);
       setCopyStatus('error');
     }
   }
+
+  const containerClasses = `
+    bg-slate-800/30 overflow-hidden backdrop-blur-sm border border-slate-700/30 w-full 
+    ${isSelected && !isDownloadable ? 'ring-2 ring-slate-400' : ''}
+  `;
+
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.2 }}
-        className={`bg-slate-800 rounded-xl overflow-hidden shadow-md w-full 
-          ${isSelected && !isDownloadable ? 'ring-2 ring-sky-500' : ''}`}
+        className={containerClasses}
         onClick={() => setIsSelected(true)}
         onBlur={() => setIsSelected(false)}
         tabIndex={isDownloadable ? undefined : 0}
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
       >
-        <div className="aspect-square bg-slate-700 flex items-center justify-center">
+        <div className="aspect-square bg-slate-800/30 flex items-center justify-center">
           {imageSrc ? (
             <img
               src={imageSrc}
@@ -135,7 +197,14 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
           ) : (
             <div className="text-slate-400 text-center p-4">
               {isDownloadable ? (
-                isProcessing ? "Processing..." : "Face swap result"
+                isProcessing ? (
+                  <div className="animate-pulse">Processing...</div>
+                ) : hasError ? (
+                  <div className="text-red-400">
+                    <p className="font-semibold mb-2">Face swap failed</p>
+                    <p className="text-sm">{errorMessage || "An unexpected error occurred"}</p>
+                  </div>
+                ) : "Face swap result"
               ) : (
                 <>
                   <p>No image selected</p>
@@ -150,55 +219,32 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
 
         {isDownloadable ? (
           <div className="grid grid-cols-2 gap-2 p-2">
-            <button
+            <Button
               onClick={onDownload}
               disabled={!imageSrc || isProcessing}
-              className="bg-indigo-500 text-white py-3 px-4 rounded-lg hover:bg-indigo-600 
-                transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed 
-                flex items-center justify-center"
+              className=""
             >
               Download
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleCopyImage}
               disabled={!imageSrc || isProcessing}
-              className="bg-emerald-500 text-white py-3 px-4 rounded-lg hover:bg-emerald-600 
-                transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed 
-                flex items-center justify-center"
+              className=""
             >
-              {copyStatus === 'copied' ? (
-                'Copied'
-              ) : copyStatus === 'error' ? (
-                'Failed to copy'
-              ) : (
-                <>
-                  Copy
-                </>
-              )}
-            </button>
+              {copyStatus === 'copied' ? 'Copied' : copyStatus === 'error' ? 'Failed to copy' : 'Copy'}
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 p-4">
-            <button
-              onClick={() => setPresetOpen(true)}
-              className="bg-emerald-500 text-white py-3 px-4 rounded-lg hover:bg-emerald-600 
-                transition-colors flex items-center justify-center"
-            >
+            <Button onClick={() => setPresetOpen(true)}>
               Preset
-            </button>
-            <label
-              htmlFor={`upload${index}`}
-              className="bg-sky-500 text-white py-3 px-4 rounded-lg hover:bg-sky-600 
-                transition-colors flex items-center justify-center cursor-pointer"
+            </Button>
+            <Button
+              variant="file"
+              onFileSelect={onFileUpload}
             >
               Upload
-            </label>
-            <input
-              id={`upload${index}`}
-              type="file"
-              className="hidden"
-              onChange={onFileUpload}
-            />
+            </Button>
           </div>
         )}
       </motion.div>
@@ -206,32 +252,33 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
       {presetOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          onClick={() => setPresetOpen(false)}
-        >
-          <div
-            className="bg-slate-800 p-6 rounded-xl shadow-2xl grid grid-cols-2 gap-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {[0, 1, 2, 3].map(x => {
-              const imgPath = `/face${x}.webp`;
-              return (
-                <img
-                  key={x}
-                  src={imgPath}
-                  alt={`Preset ${x + 1}`}
-                  className="w-40 h-40 object-cover rounded-lg cursor-pointer hover:scale-105 transition-transform"
-                  onClick={() => onPresetSelection(imgPath)}
-                />
-              );
-            })}
-          </div>
-        </div>
+        <PresetModal
+          onClose={() => setPresetOpen(false)}
+          onPresetSelection={onPresetSelection}
+        />
       )}
     </>
   );
-};
+}
+
+function AboutSection() {
+  return (
+    <motion.div
+      className="mt-8 bg-slate-800/30 p-6 backdrop-blur-sm border border-slate-700/30"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <h2 className="text-2xl font-semibold text-white mb-2">About Us</h2>
+      <p className="text-slate-300">
+        Face Swap is a website built with React TypeScript and a Python FastAPI backend,
+        created as part of our "website a week" challenge. It leverages a custom machine
+        learning model trained on the SMU DGX SuperPod.
+        <span className="block mt-2 text-sm text-slate-400">#OpenToWork</span>
+      </p>
+    </motion.div>
+  );
+}
 
 function App() {
   const [isPortrait, setIsPortrait] = useState(false);
@@ -240,24 +287,18 @@ function App() {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasError, setHasError] = useState(false);
-
-  // Keep track of the latest request to handle race conditions
+  const [errorMessage, setErrorMessage] = useState<string>();
   const latestRequestRef = useRef<number>(0);
 
-  // Handle orientation changes
   useEffect(() => {
     const mediaQuery = window.matchMedia("(orientation: portrait)");
     setIsPortrait(mediaQuery.matches);
 
-    const handler = (e: MediaQueryListEvent) => {
-      setIsPortrait(e.matches);
-    };
-
+    const handler = (e: MediaQueryListEvent) => setIsPortrait(e.matches);
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  // Improved face swap effect with race condition handling
   useEffect(() => {
     async function performFaceSwap() {
       if (sourceImage && destImage) {
@@ -265,13 +306,12 @@ function App() {
         const thisRequest = ++latestRequestRef.current;
 
         try {
-          const blob0 = await fetch(sourceImage).then(r => r.blob());
-          const blob1 = await fetch(destImage).then(r => r.blob());
+          const [blob0, blob1] = await Promise.all([
+            fetch(sourceImage).then(r => r.blob()),
+            fetch(destImage).then(r => r.blob())
+          ]);
 
-          // Check if this is still the latest request
-          if (thisRequest !== latestRequestRef.current) {
-            return; // Abandon outdated requests
-          }
+          if (thisRequest !== latestRequestRef.current) return;
 
           const data = new FormData();
           data.append('source_image', blob0);
@@ -282,20 +322,23 @@ function App() {
             body: data,
           });
 
-          // Check again before updating state
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.message || `Server returned ${response.status}`);
+          }
+
           if (thisRequest === latestRequestRef.current) {
-            if (!response.ok) {
-              throw new Error(`Server returned ${response.status}`);
-            }
             const url = URL.createObjectURL(await response.blob());
             setResultImage(url);
             setHasError(false);
+            setErrorMessage(undefined);
           }
         } catch (error) {
           console.error('Face swap failed:', error);
           if (thisRequest === latestRequestRef.current) {
             setHasError(true);
             setResultImage(null);
+            setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred');
           }
         } finally {
           if (thisRequest === latestRequestRef.current) {
@@ -309,11 +352,8 @@ function App() {
   }, [sourceImage, destImage]);
 
   function handleImageSelect(index: number, imageSrc: string) {
-    if (index === 0) {
-      setSourceImage(imageSrc);
-    } else if (index === 1) {
-      setDestImage(imageSrc);
-    }
+    if (index === 0) setSourceImage(imageSrc);
+    else if (index === 1) setDestImage(imageSrc);
   }
 
   function handleSwapImages() {
@@ -321,7 +361,6 @@ function App() {
     setSourceImage(destImage);
     setDestImage(tempSource);
   }
-
 
   function downloadImage() {
     if (resultImage) {
@@ -331,98 +370,96 @@ function App() {
       link.click();
     }
   }
+
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col">
-      <div className="max-w-4xl w-full mx-auto p-6 flex-grow">
-        <h1 className="text-4xl font-bold text-center text-white mb-8 flex items-center justify-center">
+    <div className="min-h-screen bg-slate-900 text-white p-8">
+      <div className="max-w-4xl w-full mx-auto">
+        <motion.h1
+          className="text-4xl font-bold text-center mb-8 flex items-center justify-center"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           <span className="mr-2">脸幻</span>
           <span className="text-xl text-slate-400">(Liǎnhuàn) Face Swap</span>
-        </h1>
+        </motion.h1>
 
         <div className={`flex ${isPortrait ? 'flex-col' : 'flex-row'} gap-6 items-center justify-center relative`}>
-          {/* Source image - always visible */}
           <div className="w-full md:w-1/3">
             <ImageDisplay
-              key="source-display"
               imageSrc={sourceImage}
               index={0}
               onImageSelect={handleImageSelect}
             />
           </div>
 
-          {/* Arrow and destination image */}
-          {sourceImage && (
-            <>
-              <div className="flex flex-col items-center">
-                {sourceImage && destImage && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="p-2 rounded-full bg-slate-700 hover:bg-slate-600 transition-colors mb-2"
-                    onClick={handleSwapImages}
-                    title="Swap images"
-                  >
-                    {isPortrait ? (
-                      <ArrowUpDown className="text-slate-200" size={24} />
-                    ) : (
-                      <ArrowLeftRight className="text-slate-200" size={24} />
-                    )}
-                  </motion.button>
-                )}
-                <Plus className="text-slate-400" size={32} />
-              </div>
+          <AnimatePresence>
+            {sourceImage && (
+              <>
+                <motion.div
+                  className="flex flex-col items-center"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {sourceImage && destImage && (
+                    <SwapButton isPortrait={isPortrait} onClick={handleSwapImages} />
+                  )}
+                  <Plus className="text-slate-400" size={32} />
+                </motion.div>
 
-              <div className="w-full md:w-1/3">
-                <ImageDisplay
-                  key="dest-display"
-                  imageSrc={destImage}
-                  index={1}
-                  onImageSelect={handleImageSelect}
-                />
-              </div>
-            </>
-          )}
+                <div className="w-full md:w-1/3">
+                  <ImageDisplay
+                    imageSrc={destImage}
+                    index={1}
+                    onImageSelect={handleImageSelect}
+                  />
+                </div>
+              </>
+            )}
+          </AnimatePresence>
 
-          {/* Arrow and result image */}
-          {sourceImage && destImage && (
-            <>
-              <motion.div
-                key="equals"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 }}
-              >
-                <Equal className="mx-4 text-slate-400" size={32} />
-              </motion.div>
+          <AnimatePresence>
+            {sourceImage && destImage && (
+              <>
+                <motion.div
+                  className="flex items-center"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Equal className="text-slate-400" size={32} />
+                </motion.div>
 
-              <div className="w-full md:w-1/3">
-                <ImageDisplay
-                  key="result-display"
-                  onImageSelect={(_a, _b) => { }}
-                  imageSrc={isProcessing ? null : resultImage}
-                  index={2}
-                  onDownload={downloadImage}
-                  isDownloadable
-                  isProcessing={isProcessing}
-                  hasError={hasError}
-                />
-              </div>
-            </>
-          )}
+                <div className="w-full md:w-1/3">
+                  <ImageDisplay
+                    onImageSelect={() => { }}
+                    imageSrc={isProcessing ? null : resultImage}
+                    index={2}
+                    onDownload={downloadImage}
+                    isDownloadable
+                    isProcessing={isProcessing}
+                    hasError={hasError}
+                    errorMessage={errorMessage}
+                  />
+                </div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
 
-        <div className="mt-8 bg-slate-800 p-4 rounded-xl">
-          <h2 className="text-xl font-semibold text-white mb-2">About Us</h2>
-          <p className="text-slate-300">
-            Face Swap is a website built with React TypeScript and a Python FastAPI backend,
-            created as part of our "website a week" challenge. It leverages a custom machine
-            learning model trained on the SMU DGX SuperPod.
-            <span className="block mt-2 text-sm text-slate-400">#OpenToWork</span>
-          </p>
-        </div>
+        <AboutSection />
       </div>
     </div>
   );
 }
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
 
 export default App;
