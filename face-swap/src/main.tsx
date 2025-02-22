@@ -1,6 +1,7 @@
 import React, { StrictMode, useState, useEffect, useRef } from 'react';
 import { ArrowUpDown, ArrowLeftRight, Plus, Equal } from 'lucide-react';
 import { createRoot } from 'react-dom/client';
+import { motion, AnimatePresence } from 'framer-motion';
 import './index.css';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -9,7 +10,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 function Button({ children, variant = 'default', onFileSelect, className = '', disabled, ...props }: ButtonProps) {
-  const baseStyles = "bg-slate-400 text-slate-900 py-3 px-4 hover:bg-slate-300 transition flex items-center justify-center disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-700";
+  const baseStyles = "bg-slate-400 text-slate-900 py-3 px-4 hover:bg-slate-300 flex items-center justify-center disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-700";
 
   if (variant === 'file') {
     return (
@@ -170,14 +171,21 @@ function ImageDisplay({
     }
   }
 
+  const containerClasses = `
+    bg-slate-800/30 overflow-hidden backdrop-blur-sm border border-slate-700/30 w-full 
+    ${isSelected && !isDownloadable ? 'ring-2 ring-slate-400' : ''}
+  `;
+
   return (
     <>
-      <div
-        className={`bg-slate-800/30 overflow-hidden backdrop-blur-sm border border-slate-700/30 w-full 
-          ${isSelected && !isDownloadable ? 'ring-2 ring-slate-400' : ''}`}
+      <motion.div
+        className={containerClasses}
         onClick={() => setIsSelected(true)}
         onBlur={() => setIsSelected(false)}
         tabIndex={isDownloadable ? undefined : 0}
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
       >
         <div className="aspect-square bg-slate-800/30 flex items-center justify-center">
           {imageSrc ? (
@@ -189,13 +197,14 @@ function ImageDisplay({
           ) : (
             <div className="text-slate-400 text-center p-4">
               {isDownloadable ? (
-                isProcessing ? "Processing..." :
-                  hasError ? (
-                    <div className="text-red-400">
-                      <p className="font-semibold mb-2">Face swap failed</p>
-                      <p className="text-sm">{errorMessage || "An unexpected error occurred"}</p>
-                    </div>
-                  ) : "Face swap result"
+                isProcessing ? (
+                  <div className="animate-pulse">Processing...</div>
+                ) : hasError ? (
+                  <div className="text-red-400">
+                    <p className="font-semibold mb-2">Face swap failed</p>
+                    <p className="text-sm">{errorMessage || "An unexpected error occurred"}</p>
+                  </div>
+                ) : "Face swap result"
               ) : (
                 <>
                   <p>No image selected</p>
@@ -213,12 +222,14 @@ function ImageDisplay({
             <Button
               onClick={onDownload}
               disabled={!imageSrc || isProcessing}
+              className=""
             >
               Download
             </Button>
             <Button
               onClick={handleCopyImage}
               disabled={!imageSrc || isProcessing}
+              className=""
             >
               {copyStatus === 'copied' ? 'Copied' : copyStatus === 'error' ? 'Failed to copy' : 'Copy'}
             </Button>
@@ -236,7 +247,7 @@ function ImageDisplay({
             </Button>
           </div>
         )}
-      </div>
+      </motion.div>
 
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
@@ -252,7 +263,12 @@ function ImageDisplay({
 
 function AboutSection() {
   return (
-    <div className="mt-8 bg-slate-800/30 p-6 backdrop-blur-sm border border-slate-700/30">
+    <motion.div
+      className="mt-8 bg-slate-800/30 p-6 backdrop-blur-sm border border-slate-700/30"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <h2 className="text-2xl font-semibold text-white mb-2">About Us</h2>
       <p className="text-slate-300">
         Face Swap is a website built with React TypeScript and a Python FastAPI backend,
@@ -260,7 +276,7 @@ function AboutSection() {
         learning model trained on the SMU DGX SuperPod.
         <span className="block mt-2 text-sm text-slate-400">#OpenToWork</span>
       </p>
-    </div>
+    </motion.div>
   );
 }
 
@@ -358,10 +374,15 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-900 text-white p-8">
       <div className="max-w-4xl w-full mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8 flex items-center justify-center">
+        <motion.h1
+          className="text-4xl font-bold text-center mb-8 flex items-center justify-center"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
           <span className="mr-2">脸幻</span>
           <span className="text-xl text-slate-400">(Liǎnhuàn) Face Swap</span>
-        </h1>
+        </motion.h1>
 
         <div className={`flex ${isPortrait ? 'flex-col' : 'flex-row'} gap-6 items-center justify-center relative`}>
           <div className="w-full md:w-1/3">
@@ -372,45 +393,61 @@ function App() {
             />
           </div>
 
-          {sourceImage && (
-            <>
-              <div className="flex flex-col items-center">
-                {sourceImage && destImage && (
-                  <SwapButton isPortrait={isPortrait} onClick={handleSwapImages} />
-                )}
-                <Plus className="text-slate-400" size={32} />
-              </div>
+          <AnimatePresence>
+            {sourceImage && (
+              <>
+                <motion.div
+                  className="flex flex-col items-center"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {sourceImage && destImage && (
+                    <SwapButton isPortrait={isPortrait} onClick={handleSwapImages} />
+                  )}
+                  <Plus className="text-slate-400" size={32} />
+                </motion.div>
 
-              <div className="w-full md:w-1/3">
-                <ImageDisplay
-                  imageSrc={destImage}
-                  index={1}
-                  onImageSelect={handleImageSelect}
-                />
-              </div>
-            </>
-          )}
+                <div className="w-full md:w-1/3">
+                  <ImageDisplay
+                    imageSrc={destImage}
+                    index={1}
+                    onImageSelect={handleImageSelect}
+                  />
+                </div>
+              </>
+            )}
+          </AnimatePresence>
 
-          {sourceImage && destImage && (
-            <>
-              <div className="flex items-center">
-                <Equal className="text-slate-400" size={32} />
-              </div>
+          <AnimatePresence>
+            {sourceImage && destImage && (
+              <>
+                <motion.div
+                  className="flex items-center"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Equal className="text-slate-400" size={32} />
+                </motion.div>
 
-              <div className="w-full md:w-1/3">
-                <ImageDisplay
-                  onImageSelect={() => { }}
-                  imageSrc={isProcessing ? null : resultImage}
-                  index={2}
-                  onDownload={downloadImage}
-                  isDownloadable
-                  isProcessing={isProcessing}
-                  hasError={hasError}
-                  errorMessage={errorMessage}
-                />
-              </div>
-            </>
-          )}
+                <div className="w-full md:w-1/3">
+                  <ImageDisplay
+                    onImageSelect={() => { }}
+                    imageSrc={isProcessing ? null : resultImage}
+                    index={2}
+                    onDownload={downloadImage}
+                    isDownloadable
+                    isProcessing={isProcessing}
+                    hasError={hasError}
+                    errorMessage={errorMessage}
+                  />
+                </div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
 
         <AboutSection />
