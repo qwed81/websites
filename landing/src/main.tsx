@@ -45,7 +45,7 @@ interface ProjectProps {
 function Logo() {
   return (
     <div className="flex items-center gap-4">
-      <h1 className="text-xl font-semibold">SmartFellas</h1>
+      <h1 className="text-xl text-slate-100 font-semibold">SmartFellas</h1>
     </div>
   );
 }
@@ -91,7 +91,7 @@ function NavigationPill({ sections, activeSection }: NavigationProps) {
 function NavigationBackground({ pillStyle }: { pillStyle: { left: number; width: number } }) {
   return (
     <div
-      className={`absolute bg-emerald-900/50 transition-all duration-300 ease-in-out ${pillStyle.width === 0 ? 'opacity-0' : 'opacity-100'}`}
+      className={`absolute bg-slate-900/50 transition-all duration-300 ease-in-out ${pillStyle.width === 0 ? 'opacity-0' : 'opacity-100'}`}
       style={{
         left: pillStyle.left,
         width: pillStyle.width,
@@ -111,8 +111,7 @@ function NavigationLinks({ sections, activeSection }: NavigationProps) {
           key={section.id}
           href={`#${section.id}`}
           data-section={section.id}
-          className={`px-4 py-1 relative z-10 transition-colors duration-300 ${activeSection === section.id ? 'text-emerald-400' : 'hover:text-emerald-300'
-            }`}
+          className={`px-4 py-1 relative z-10 transition-colors duration-300 ${activeSection === section.id ? 'text-slate-400' : 'hover:text-slate-300'}`}
         >
           {section.label}
         </a>
@@ -123,7 +122,7 @@ function NavigationLinks({ sections, activeSection }: NavigationProps) {
 
 function ProjectCard({ title, description, technologies, image, link }: ProjectProps) {
   return (
-    <div className="bg-emerald-800/30 p-6 backdrop-blur-sm border border-emerald-700/30">
+    <div className="bg-slate-800/30 p-6 backdrop-blur-sm border border-slate-700/30">
       <ProjectImage title={title} image={image} />
       <ProjectInfo title={title} description={description} />
       <TechnologyTags technologies={technologies} />
@@ -134,7 +133,7 @@ function ProjectCard({ title, description, technologies, image, link }: ProjectP
 
 function ProjectImage({ title, image }: { title: string; image?: string }) {
   return (
-    <div className="aspect-video overflow-hidden mb-4 bg-emerald-900/50">
+    <div className="aspect-video overflow-hidden mb-4 bg-slate-900/50">
       <img
         src={image || "/api/placeholder/640/360"}
         alt={title}
@@ -148,7 +147,7 @@ function ProjectInfo({ title, description }: { title: string; description: strin
   return (
     <>
       <h3 className="text-xl font-semibold mb-2">{title}</h3>
-      <p className="text-emerald-100/80 mb-4">{description}</p>
+      <p className="text-slate-100/80 mb-4">{description}</p>
     </>
   );
 }
@@ -159,7 +158,7 @@ function TechnologyTags({ technologies }: { technologies: Technology[] }) {
       {technologies.map((tech, index) => (
         <span
           key={index}
-          className="px-3 py-1 bg-emerald-900/50 text-sm text-emerald-300 border border-emerald-700/30 flex items-center gap-2"
+          className="px-3 py-1 bg-slate-900/50 text-sm text-slate-300 border border-slate-700/30 flex items-center gap-2"
         >
           {tech.icon}
           {tech.name}
@@ -175,7 +174,7 @@ function ProjectLink({ link }: { link?: string }) {
   return (
     <a
       href={link}
-      className="text-emerald-400 hover:text-emerald-300 transition inline-flex items-center gap-2"
+      className="text-slate-400 hover:text-slate-300 transition inline-flex items-center gap-2"
     >
       View Project <span className="text-xl">→</span>
     </a>
@@ -184,7 +183,7 @@ function ProjectLink({ link }: { link?: string }) {
 
 function TeamMemberCard({ name, role, image, links }: TeamMemberProps) {
   return (
-    <div className="bg-emerald-800/30 p-6 backdrop-blur-sm border border-emerald-700/30">
+    <div className="bg-slate-800/30 p-6 backdrop-blur-sm border border-slate-700/30">
       <TeamMemberInfo name={name} role={role} image={image} />
       <TeamMemberLinks links={links} />
     </div>
@@ -194,7 +193,7 @@ function TeamMemberCard({ name, role, image, links }: TeamMemberProps) {
 function TeamMemberInfo({ name, role, image }: Omit<TeamMemberProps, 'links'>) {
   return (
     <div className="flex items-center gap-4 mb-4">
-      <div className="w-16 h-16 overflow-hidden border border-emerald-700/30">
+      <div className="w-16 h-16 overflow-hidden border border-slate-700/30">
         <img
           src={image || "/api/placeholder/64/64"}
           alt={name}
@@ -203,7 +202,7 @@ function TeamMemberInfo({ name, role, image }: Omit<TeamMemberProps, 'links'>) {
       </div>
       <div>
         <h3 className="text-xl font-semibold">{name}</h3>
-        <p className="text-emerald-300">{role}</p>
+        <p className="text-slate-300">{role}</p>
       </div>
     </div>
   );
@@ -216,7 +215,7 @@ function TeamMemberLinks({ links }: { links: SocialLink[] }) {
         <a
           key={index}
           href={link.url}
-          className="p-2 bg-emerald-900/50 hover:bg-emerald-900/70 transition border border-emerald-700/30"
+          className="p-2 bg-slate-900/50 hover:bg-slate-900/70 transition border border-slate-700/30"
           title={link.type}
         >
           {link.icon}
@@ -300,16 +299,11 @@ function TeamProfiles() {
 
 function HeroSection() {
   return (
-    // <h2 className="text-6xl font-bold leading-tight">
-    //   We develop software
-    //   {' '}<span className="text-emerald-400 font-serif italic">across the stack</span>{' '}
-    //   and are ready for any challenge
-    // </h2>
     <h2 className="text-6xl font-bold leading-tight">
       You're either a
-      {' '}<span className="text-emerald-400 font-serif italic">smart fella</span>{' '}
+      {' '}<span className="text-slate-400 font-serif italic">smart fella</span>{' '}
       or a
-      {' '}<span className="text-emerald-400 font-serif italic">fart smella</span>{' '}
+      {' '}<span className="text-slate-400 font-serif italic">fart smella</span>{' '}
     </h2>
   );
 }
@@ -319,7 +313,7 @@ function CTASection() {
     <div className="mt-32">
       <a
         href="#contact"
-        className="inline-flex items-center gap-2 bg-emerald-400 text-emerald-900 px-6 py-3 font-medium hover:bg-emerald-300 transition border border-emerald-500"
+        className="inline-flex items-center gap-2 bg-slate-400 text-slate-900 px-6 py-3 font-medium hover:bg-slate-300 transition border border-slate-500"
       >
         Get in touch
         <span className="text-xl">→</span>
@@ -376,8 +370,8 @@ function App() {
   }, [sections]);
 
   return (
-    <div className="min-h-screen bg-emerald-900 text-white p-8">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-emerald-900/30 backdrop-blur-md">
+    <div className="min-h-screen bg-slate-900 text-white p-8">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/30 backdrop-blur-md">
         <div className="flex justify-between items-center px-8 py-8">
           <Logo />
           <NavigationPill sections={sections} activeSection={activeSection} />
