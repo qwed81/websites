@@ -80,7 +80,7 @@ function NavigationPill({ sections, activeSection }: NavigationProps) {
   return (
     <div
       ref={navRef}
-      className="relative flex gap-6 bg-gray-800/30 px-6 py-2"
+      className="relative flex bg-gray-800/30 py-2"
     >
       <NavigationBackground pillStyle={pillStyle} />
       <NavigationLinks sections={sections} activeSection={activeSection} />
@@ -95,7 +95,6 @@ function NavigationBackground({ pillStyle }: { pillStyle: { left: number; width:
       style={{
         left: pillStyle.left,
         width: pillStyle.width,
-        height: '32px',
         top: '50%',
         transform: 'translateY(-50%)'
       }}
@@ -237,7 +236,7 @@ function ProjectsSection() {
         { name: "ONNX", icon: <Si.SiOnnx size={16} /> },
         { name: "FastAPI", icon: <Si.SiFastapi size={16} /> }
       ],
-      image: "/api/placeholder/640/360",
+      image: "/faceswap.jpeg",
       link: "https://faceswap.smartfellas.us"
     },
   ];
