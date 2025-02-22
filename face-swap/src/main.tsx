@@ -3,6 +3,34 @@ import { ArrowUpDown, ArrowLeftRight, Plus, Equal } from 'lucide-react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'default' | 'file';
+  onFileSelect?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+function Button({ children, variant = 'default', onFileSelect, className = '', disabled, ...props }: ButtonProps) {
+  const baseStyles = "bg-slate-400 text-slate-900 py-3 px-4 hover:bg-slate-300 transition flex items-center justify-center disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-700";
+
+  if (variant === 'file') {
+    return (
+      <label className={`${baseStyles} cursor-pointer ${disabled ? 'pointer-events-none' : ''} ${className}`}>
+        {children}
+        <input type="file" className="hidden" onChange={onFileSelect} disabled={disabled} />
+      </label>
+    );
+  }
+
+  return (
+    <button
+      className={`${baseStyles} ${className}`}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
 interface ImageDisplayProps {
   imageSrc: string | null;
   index: number;
@@ -14,23 +42,19 @@ interface ImageDisplayProps {
   errorMessage?: string;
 }
 
-function ImageUploader({ onFileUpload }: { onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
+function SwapButton({ isPortrait, onClick }: { isPortrait: boolean; onClick: () => void }) {
   return (
-    <label className="bg-slate-400 text-slate-900 py-3 px-4 hover:bg-slate-300 transition flex items-center justify-center cursor-pointer">
-      Upload
-      <input type="file" className="hidden" onChange={onFileUpload} />
-    </label>
-  );
-}
-
-function PresetButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
+    <Button
       onClick={onClick}
-      className="bg-slate-400 text-slate-900 py-3 px-4 hover:bg-slate-300 transition flex items-center justify-center"
+      title="Swap images"
+      className="p-2 bg-slate-800/30 hover:bg-slate-700/30 mb-2 backdrop-blur-sm border border-slate-700/30"
     >
-      Preset
-    </button>
+      {isPortrait ? (
+        <ArrowUpDown className="text-slate-200" size={24} />
+      ) : (
+        <ArrowLeftRight className="text-slate-200" size={24} />
+      )}
+    </Button>
   );
 }
 
@@ -186,29 +210,30 @@ function ImageDisplay({
 
         {isDownloadable ? (
           <div className="grid grid-cols-2 gap-2 p-2">
-            <button
+            <Button
               onClick={onDownload}
               disabled={!imageSrc || isProcessing}
-              className="bg-slate-400 text-slate-900 py-3 px-4 hover:bg-slate-300 
-                transition disabled:bg-slate-700 disabled:cursor-not-allowed 
-                flex items-center justify-center"
             >
               Download
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleCopyImage}
               disabled={!imageSrc || isProcessing}
-              className="bg-slate-400 text-slate-900 py-3 px-4 rounded-lg hover:bg-slate-300 
-                transition disabled:bg-slate-700 disabled:cursor-not-allowed 
-                flex items-center justify-center"
             >
               {copyStatus === 'copied' ? 'Copied' : copyStatus === 'error' ? 'Failed to copy' : 'Copy'}
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 p-4">
-            <PresetButton onClick={() => setPresetOpen(true)} />
-            <ImageUploader onFileUpload={onFileUpload} />
+            <Button onClick={() => setPresetOpen(true)}>
+              Preset
+            </Button>
+            <Button
+              variant="file"
+              onFileSelect={onFileUpload}
+            >
+              Upload
+            </Button>
           </div>
         )}
       </div>
@@ -222,22 +247,6 @@ function ImageDisplay({
         />
       )}
     </>
-  );
-}
-
-function SwapButton({ isPortrait, onClick }: { isPortrait: boolean; onClick: () => void }) {
-  return (
-    <button
-      className="p-2 bg-slate-800/30 hover:bg-slate-700/30 transition-colors mb-2 backdrop-blur-sm border border-slate-700/30"
-      onClick={onClick}
-      title="Swap images"
-    >
-      {isPortrait ? (
-        <ArrowUpDown className="text-slate-200" size={24} />
-      ) : (
-        <ArrowLeftRight className="text-slate-200" size={24} />
-      )}
-    </button>
   );
 }
 
@@ -303,10 +312,10 @@ function App() {
           }
 
           if (thisRequest === latestRequestRef.current) {
-            setErrorMessage(undefined);
             const url = URL.createObjectURL(await response.blob());
             setResultImage(url);
             setHasError(false);
+            setErrorMessage(undefined);
           }
         } catch (error) {
           console.error('Face swap failed:', error);
