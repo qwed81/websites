@@ -11,6 +11,7 @@ interface ImageDisplayProps {
   isDownloadable?: boolean;
   isProcessing?: boolean;
   hasError?: boolean;
+  errorMessage?: string;
 }
 
 function ImageUploader({ onFileUpload }: { onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void }) {
@@ -64,7 +65,8 @@ function ImageDisplay({
   onDownload,
   isDownloadable = false,
   isProcessing = false,
-  hasError = false
+  hasError = false,
+  errorMessage
 }: ImageDisplayProps) {
   const [presetOpen, setPresetOpen] = useState(false);
   const [isSelected, setIsSelected] = useState(false);
@@ -163,7 +165,13 @@ function ImageDisplay({
           ) : (
             <div className="text-slate-400 text-center p-4">
               {isDownloadable ? (
-                isProcessing ? "Processing..." : "Face swap result"
+                isProcessing ? "Processing..." :
+                  hasError ? (
+                    <div className="text-red-400">
+                      <p className="font-semibold mb-2">Face swap failed</p>
+                      <p className="text-sm">{errorMessage || "An unexpected error occurred"}</p>
+                    </div>
+                  ) : "Face swap result"
               ) : (
                 <>
                   <p>No image selected</p>
@@ -254,6 +262,7 @@ function App() {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>();
   const latestRequestRef = useRef<number>(0);
 
   useEffect(() => {
@@ -288,8 +297,13 @@ function App() {
             body: data,
           });
 
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.message || `Server returned ${response.status}`);
+          }
+
           if (thisRequest === latestRequestRef.current) {
-            if (!response.ok) throw new Error(`Server returned ${response.status}`);
+            setErrorMessage(undefined);
             const url = URL.createObjectURL(await response.blob());
             setResultImage(url);
             setHasError(false);
@@ -299,6 +313,7 @@ function App() {
           if (thisRequest === latestRequestRef.current) {
             setHasError(true);
             setResultImage(null);
+            setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred');
           }
         } finally {
           if (thisRequest === latestRequestRef.current) {
@@ -382,6 +397,7 @@ function App() {
                   isDownloadable
                   isProcessing={isProcessing}
                   hasError={hasError}
+                  errorMessage={errorMessage}
                 />
               </div>
             </>
