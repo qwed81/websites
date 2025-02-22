@@ -80,7 +80,7 @@ function NavigationPill({ sections, activeSection }: NavigationProps) {
   return (
     <div
       ref={navRef}
-      className="relative flex gap-6 bg-gray-800/30 px-6 py-2"
+      className="relative flex bg-gray-800/30 py-2"
     >
       <NavigationBackground pillStyle={pillStyle} />
       <NavigationLinks sections={sections} activeSection={activeSection} />
