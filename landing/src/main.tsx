@@ -3,6 +3,7 @@ import * as Si from '@icons-pack/react-simple-icons'
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail } from 'lucide-react';
 import { createRoot } from 'react-dom/client'
+import { motion, useInView, useAnimation, AnimatePresence } from 'framer-motion';
 import './index.css'
 
 interface Section {
@@ -42,11 +43,37 @@ interface ProjectProps {
   link?: string;
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6
+    }
+  }
+};
+
 function Logo() {
   return (
-    <div className="flex items-center gap-4">
+    <motion.div
+      className="flex items-center gap-4"
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <h1 className="text-xl text-slate-100 font-semibold">SmartFellas</h1>
-    </div>
+    </motion.div>
   );
 }
 
@@ -78,19 +105,22 @@ function NavigationPill({ sections, activeSection }: NavigationProps) {
   }, [activeSection]);
 
   return (
-    <div
+    <motion.div
       ref={navRef}
       className="relative flex bg-gray-800/30 py-2"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
     >
       <NavigationBackground pillStyle={pillStyle} />
       <NavigationLinks sections={sections} activeSection={activeSection} />
-    </div>
+    </motion.div>
   );
 }
 
 function NavigationBackground({ pillStyle }: { pillStyle: { left: number; width: number } }) {
   return (
-    <div
+    <motion.div
       className={`absolute bg-slate-900/50 transition-all duration-300 ease-in-out ${pillStyle.width === 0 ? 'opacity-0' : 'opacity-100'}`}
       style={{
         left: pillStyle.left,
@@ -98,6 +128,7 @@ function NavigationBackground({ pillStyle }: { pillStyle: { left: number; width:
         top: '50%',
         transform: 'translateY(-50%)'
       }}
+      layout
     />
   );
 }
@@ -119,21 +150,47 @@ function NavigationLinks({ sections, activeSection }: NavigationProps) {
   );
 }
 
+function AnimatedSection({ children }: { children: React.ReactNode }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: false, amount: 0.3 });
+  const controls = useAnimation();
+
+  useEffect(() => {
+    if (isInView) {
+      controls.start('visible');
+    }
+  }, [isInView, controls]);
+
+  return (
+    <motion.div
+      ref={ref}
+      initial="hidden"
+      animate={controls}
+      variants={containerVariants}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 function ProjectCard({ title, description, technologies, image, link }: ProjectProps) {
   return (
-    <div className="bg-slate-800/30 p-6 backdrop-blur-sm border border-slate-700/30">
+    <motion.div
+      className="bg-slate-800/30 p-6 backdrop-blur-sm border border-slate-700/30"
+      variants={itemVariants}
+    >
       <ProjectImage title={title} image={image} />
       <ProjectInfo title={title} description={description} />
       <TechnologyTags technologies={technologies} />
       <ProjectLink link={link} />
-    </div>
+    </motion.div>
   );
 }
 
 function ProjectImage({ title, image }: { title: string; image?: string }) {
   return (
     <div className="aspect-video overflow-hidden mb-4 bg-slate-900/50">
-      <img
+      <motion.img
         src={image || "/api/placeholder/640/360"}
         alt={title}
         className="w-full h-full object-cover"
@@ -155,13 +212,13 @@ function TechnologyTags({ technologies }: { technologies: Technology[] }) {
   return (
     <div className="flex flex-wrap gap-2 mb-4">
       {technologies.map((tech, index) => (
-        <span
+        <motion.span
           key={index}
           className="px-3 py-1 bg-slate-900/50 text-sm text-slate-300 border border-slate-700/30 flex items-center gap-2"
         >
           {tech.icon}
           {tech.name}
-        </span>
+        </motion.span>
       ))}
     </div>
   );
@@ -171,34 +228,39 @@ function ProjectLink({ link }: { link?: string }) {
   if (!link) return null;
 
   return (
-    <a
+    <motion.a
       href={link}
       className="text-slate-400 hover:text-slate-300 transition inline-flex items-center gap-2"
     >
       View Project <span className="text-xl">→</span>
-    </a>
+    </motion.a>
   );
 }
 
 function TeamMemberCard({ name, role, image, links }: TeamMemberProps) {
   return (
-    <div className="bg-slate-800/30 p-6 backdrop-blur-sm border border-slate-700/30">
+    <motion.div
+      className="bg-slate-800/30 p-6 backdrop-blur-sm border border-slate-700/30"
+      variants={itemVariants}
+    >
       <TeamMemberInfo name={name} role={role} image={image} />
       <TeamMemberLinks links={links} />
-    </div>
+    </motion.div>
   );
 }
 
 function TeamMemberInfo({ name, role, image }: Omit<TeamMemberProps, 'links'>) {
   return (
     <div className="flex items-center gap-4 mb-4">
-      <div className="w-16 h-16 overflow-hidden border border-slate-700/30">
+      <motion.div
+        className="w-16 h-16 overflow-hidden border border-slate-700/30"
+      >
         <img
           src={image || "/api/placeholder/64/64"}
           alt={name}
           className="w-full h-full object-cover"
         />
-      </div>
+      </motion.div>
       <div>
         <h3 className="text-xl font-semibold">{name}</h3>
         <p className="text-slate-300">{role}</p>
@@ -211,14 +273,14 @@ function TeamMemberLinks({ links }: { links: SocialLink[] }) {
   return (
     <div className="flex gap-3">
       {links.map((link, index) => (
-        <a
+        <motion.a
           key={index}
           href={link.url}
           className="p-2 bg-slate-900/50 hover:bg-slate-900/70 transition border border-slate-700/30"
           title={link.type}
         >
           {link.icon}
-        </a>
+        </motion.a>
       ))}
     </div>
   );
@@ -242,13 +304,22 @@ function ProjectsSection() {
   ];
 
   return (
-    <div className="mt-64" id="projects">
-      <h2 className="text-2xl font-semibold mb-8">Our Projects</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project, index) => (
-          <ProjectCard key={index} {...project} />
-        ))}
-      </div>
+    <div className="mt-32" id="projects">
+      <motion.h2
+        className="text-2xl font-semibold mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        Our Projects
+      </motion.h2>
+      <AnimatedSection>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((project, index) => (
+            <ProjectCard key={index} {...project} />
+          ))}
+        </div>
+      </AnimatedSection>
     </div>
   );
 }
@@ -285,38 +356,66 @@ function TeamProfiles() {
   ];
 
   return (
-    <div className="mt-64" id="team">
-      <h2 className="text-2xl font-semibold mb-8">Meet Our Team</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {teamMembers.map((member, index) => (
-          <TeamMemberCard key={index} {...member} />
-        ))}
-      </div>
+    <div className="mt-32" id="team">
+      <motion.h2
+        className="text-2xl font-semibold mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        Meet Our Team
+      </motion.h2>
+      <AnimatedSection>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {teamMembers.map((member, index) => (
+            <TeamMemberCard key={index} {...member} />
+          ))}
+        </div>
+      </AnimatedSection>
     </div>
   );
 }
 
 function HeroSection() {
   return (
-    <h2 className="text-6xl font-bold leading-tight">
-      You're either a
-      {' '}<span className="text-slate-400 font-serif italic">smart fella</span>{' '}
-      or a
-      {' '}<span className="text-slate-400 font-serif italic">fart smella</span>{' '}
-    </h2>
-  );
-}
-
-function CTASection() {
-  return (
-    <div className="mt-32">
-      <a
-        href="#contact"
-        className="inline-flex items-center gap-2 bg-slate-400 text-slate-900 px-6 py-3 font-medium hover:bg-slate-300 transition border border-slate-500"
+    <div>
+      <motion.h2
+        className="text-6xl font-bold leading-tight"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
       >
-        Get in touch
-        <span className="text-xl">→</span>
-      </a>
+        <motion.span
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          You're either a
+        </motion.span>{' '}
+        <motion.span
+          className="text-slate-400 font-serif italic"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+        >
+          smart fella
+        </motion.span>{' '}
+        <motion.span
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+        >
+          or a
+        </motion.span>{' '}
+        <motion.span
+          className="text-slate-400 font-serif italic"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 1.1 }}
+        >
+          fart smella
+        </motion.span>{' '}
+      </motion.h2>
     </div>
   );
 }
@@ -363,7 +462,7 @@ function App() {
     }
 
     window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Initial check
+    handleScroll();
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, [sections]);
@@ -377,18 +476,16 @@ function App() {
         </div>
       </nav>
 
-      <main className="max-w-6xl mx-auto mt-32">
+      <main className="max-w-7xl mx-auto mt-32">
         <HeroSection />
         {sections.map(({ id, Component }) => (
           <Component key={id} />
         ))}
-        <CTASection />
       </main>
     </div>
   );
 }
 
-// Root Render
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
