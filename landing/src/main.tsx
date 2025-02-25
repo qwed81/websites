@@ -421,7 +421,7 @@ const HeroSection: React.FC = () => {
           className="text-slate-400 font-serif italic"
           {...itemAnimation(1.1)}
         >
-          Results
+          Designs
         </motion.span>
         <motion.span {...itemAnimation(1.4)}>
           , Smart
