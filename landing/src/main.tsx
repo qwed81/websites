@@ -77,78 +77,6 @@ function Logo() {
   );
 }
 
-function NavigationPill({ sections, activeSection }: NavigationProps) {
-  const [pillStyle, setPillStyle] = useState({ left: 0, width: 0 });
-  const navRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function updatePillPosition() {
-      if (!activeSection) {
-        setPillStyle({ left: 0, width: 0 });
-        return;
-      }
-
-      const activeLink = navRef.current?.querySelector(`[data-section="${activeSection}"]`);
-      if (activeLink && navRef.current) {
-        const navRect = navRef.current.getBoundingClientRect();
-        const linkRect = activeLink.getBoundingClientRect();
-        setPillStyle({
-          left: linkRect.left - navRect.left,
-          width: linkRect.width,
-        });
-      }
-    }
-
-    updatePillPosition();
-    window.addEventListener('resize', updatePillPosition);
-    return () => window.removeEventListener('resize', updatePillPosition);
-  }, [activeSection]);
-
-  return (
-    <motion.div
-      ref={navRef}
-      className="relative flex bg-gray-800/30 py-2"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 }}
-    >
-      <NavigationBackground pillStyle={pillStyle} />
-      <NavigationLinks sections={sections} activeSection={activeSection} />
-    </motion.div>
-  );
-}
-
-function NavigationBackground({ pillStyle }: { pillStyle: { left: number; width: number } }) {
-  return (
-    <motion.div
-      className={`absolute bg-slate-900/50 transition-all duration-300 ease-in-out ${pillStyle.width === 0 ? 'opacity-0' : 'opacity-100'}`}
-      style={{
-        left: pillStyle.left,
-        width: pillStyle.width,
-        top: '50%',
-        transform: 'translateY(-50%)'
-      }}
-      layout
-    />
-  );
-}
-
-function NavigationLinks({ sections, activeSection }: NavigationProps) {
-  return (
-    <>
-      {sections.map(section => (
-        <a
-          key={section.id}
-          href={`#${section.id}`}
-          data-section={section.id}
-          className={`px-4 py-1 relative z-10 transition-colors duration-300 ${activeSection === section.id ? 'text-slate-400' : 'hover:text-slate-300'}`}
-        >
-          {section.label}
-        </a>
-      ))}
-    </>
-  );
-}
 
 function AnimatedSection({ children }: { children: React.ReactNode }) {
   const ref = useRef(null);
@@ -489,7 +417,6 @@ function App() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/30 backdrop-blur-md">
         <div className="flex justify-between items-center px-8 py-8">
           <Logo />
-          <NavigationPill sections={sections} activeSection={activeSection} />
         </div>
       </nav>
 
