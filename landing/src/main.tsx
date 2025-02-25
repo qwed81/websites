@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import * as Si from '@icons-pack/react-simple-icons'
 import React, { useState, useEffect, useRef } from 'react';
-import { Mail } from 'lucide-react';
+import { Mail, Linkedin } from 'lucide-react';
 import { createRoot } from 'react-dom/client'
 import { motion, useInView, useAnimation } from 'framer-motion';
 import './index.css'
@@ -332,7 +332,8 @@ function TeamProfiles() {
       image: "/benprofile.jpeg",
       links: [
         { type: "Github", url: "https://github.com/satedgami", icon: <Si.SiGithub size={20} /> },
-        { type: "Email", url: "mailto:btpbenmrkin@gmail.com", icon: <Mail size={20} /> }
+        { type: "Email", url: "mailto:btpbenmrkin@gmail.com", icon: <Mail size={20} /> },
+        { type: "LinkedIn", url: "https://www.linkedin.com/in/benkteng/", icon: <Linkedin size={20} /> }
       ]
     },
     {
@@ -341,7 +342,8 @@ function TeamProfiles() {
       image: "/pravinprofile.jpeg",
       links: [
         { type: "Github", url: "https://github.com/pravinxor", icon: <Si.SiGithub size={20} /> },
-        { type: "Email", url: "mailto:pravinramana25@protonmail.ch", icon: <Mail size={20} /> }
+        { type: "Email", url: "mailto:pravinramana25@protonmail.ch", icon: <Mail size={20} /> },
+        { type: "LinkedIn", url: "https://www.linkedin.com/in/pravin-ramana/", icon: <Linkedin size={20} /> }
       ]
     },
     {
@@ -350,7 +352,8 @@ function TeamProfiles() {
       image: "/joshprofile.jpeg",
       links: [
         { type: "Github", url: "https://github.com/qwed81", icon: <Si.SiGithub size={20} /> },
-        { type: "Email", url: "#", icon: <Mail size={20} /> }
+        { type: "Email", url: "mailto:jcox.12.2002@gmail.com", icon: <Mail size={20} /> },
+        { type: "LinkedIn", url: "https://www.linkedin.com/in/joshua-cox-18834b244/", icon: <Linkedin size={20} /> }
       ]
     },
   ];
