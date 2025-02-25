@@ -3,7 +3,7 @@ import * as Si from '@icons-pack/react-simple-icons'
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail } from 'lucide-react';
 import { createRoot } from 'react-dom/client'
-import { motion, useInView, useAnimation, AnimatePresence } from 'framer-motion';
+import { motion, useInView, useAnimation } from 'framer-motion';
 import './index.css'
 
 interface Section {
@@ -376,45 +376,59 @@ function TeamProfiles() {
   );
 }
 
-function HeroSection() {
+
+const HeroSection: React.FC = () => {
+  interface AnimationProps {
+    initial: { opacity: number; y?: number };
+    animate: { opacity: number; y?: number };
+    transition: { duration: number; delay?: number };
+  }
+
+  const containerAnimation: AnimationProps = {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    transition: { duration: 0.8 }
+  };
+
+  const itemAnimation = (delay: number): AnimationProps => ({
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5, delay }
+  });
+
   return (
     <div>
       <motion.h2
         className="text-6xl font-bold leading-tight"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
+        {...containerAnimation}
       >
-        <motion.span
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          You're either a
+        <motion.span {...itemAnimation(0.2)}>
+          Smart
         </motion.span>{' '}
         <motion.span
           className="text-slate-400 font-serif italic"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
+          {...itemAnimation(0.5)}
         >
-          smart fella
-        </motion.span>{' '}
-        <motion.span
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
-        >
-          or a
+          Work
+        </motion.span>
+        <motion.span {...itemAnimation(0.8)}>
+          , Smart
         </motion.span>{' '}
         <motion.span
           className="text-slate-400 font-serif italic"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 1.1 }}
+          {...itemAnimation(1.1)}
         >
-          fart smella
+          Results
+        </motion.span>
+        <motion.span {...itemAnimation(1.4)}>
+          , Smart
         </motion.span>{' '}
+        <motion.span
+          className="text-slate-400 font-serif italic"
+          {...itemAnimation(1.7)}
+        >
+          Fellas
+        </motion.span>
       </motion.h2>
     </div>
   );
