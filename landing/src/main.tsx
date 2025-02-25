@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import * as Si from '@icons-pack/react-simple-icons'
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Mail, Linkedin } from 'lucide-react';
 import { createRoot } from 'react-dom/client'
 import { motion, useInView, useAnimation } from 'framer-motion';
@@ -10,11 +10,6 @@ interface Section {
   id: string;
   label: string;
   Component: React.FC;
-}
-
-interface NavigationProps {
-  sections: Section[];
-  activeSection: string;
 }
 
 interface SocialLink {
@@ -366,8 +361,6 @@ const HeroSection: React.FC = () => {
 }
 
 function App() {
-  const [activeSection, setActiveSection] = useState<string>('');
-
   const sections: Section[] = [
     {
       id: 'team',
@@ -380,37 +373,6 @@ function App() {
       Component: ProjectsSection
     }
   ];
-
-  useEffect(() => {
-    function handleScroll() {
-      const scrollPosition = window.scrollY + window.innerHeight / 3;
-
-      let isInSection = false;
-
-      for (const section of sections) {
-        const element = document.getElementById(section.id);
-        if (element) {
-          const { top } = element.getBoundingClientRect();
-          const elementPosition = top + window.scrollY;
-
-          if (scrollPosition >= elementPosition && scrollPosition < elementPosition + element.offsetHeight) {
-            setActiveSection(section.id);
-            isInSection = true;
-            break;
-          }
-        }
-      }
-
-      if (!isInSection) {
-        setActiveSection('');
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll);
-    handleScroll();
-
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [sections]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-8">
