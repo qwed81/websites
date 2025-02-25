@@ -350,7 +350,7 @@ function TeamProfiles() {
       image: "/joshprofile.jpeg",
       links: [
         { type: "Github", url: "https://github.com/qwed81", icon: <Si.SiGithub size={20} /> },
-        { type: "Email", url: "#", icon: <Mail size={20} /> }
+        { type: "Email", url: "mailto:jcox.12.2002@gmail.com", icon: <Mail size={20} /> }
       ]
     },
   ];
