@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import onnx
 from onnx import numpy_helper
-from . import face_align
+from . import align
 
 
 class Swapper:
@@ -41,7 +41,7 @@ class Swapper:
 
     def get(self, img, target_face, source_face, paste_back=True):
         # target align and norm
-        aimg, M = face_align.norm_crop2(img, target_face.kps, self.input_size[0])
+        aimg, M = align.norm_crop2(img, target_face.kps, self.input_size[0])
         blob = cv2.dnn.blobFromImage(
             aimg,
             1.0 / self.input_std,
