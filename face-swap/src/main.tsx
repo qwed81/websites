@@ -273,7 +273,7 @@ function AboutSection() {
       <p className="text-slate-300">
         Face Swap is a website built with React TypeScript and a Python FastAPI backend,
         created as part of our "website a week" challenge. It leverages a custom machine
-        learning model trained on the SMU DGX SuperPod.
+        learning model trained on DGX SuperPod.
         <span className="block mt-2 text-sm text-slate-400">#OpenToWork</span>
       </p>
     </motion.div>
@@ -380,8 +380,7 @@ function App() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <span className="mr-2">脸幻</span>
-          <span className="text-xl text-slate-400">(Liǎnhuàn) Face Swap</span>
+          <span className="text-xl text-slate-400">Face Swap</span>
         </motion.h1>
 
         <div className={`flex ${isPortrait ? 'flex-col' : 'flex-row'} gap-6 items-center justify-center relative`}>
