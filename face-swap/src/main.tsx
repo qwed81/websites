@@ -271,7 +271,7 @@ function AboutSection() {
     >
       <h2 className="text-2xl font-semibold text-white mb-2">About Us</h2>
       <p className="text-slate-300">
-        Face Swap is a website built with React TypeScript and a Python FastAPI backend,
+        Face Swap is a website built with React, TypeScript, and a Python FastAPI backend,
         created as part of our "website a week" challenge. It leverages a custom machine
         learning model trained on DGX SuperPod.
         <span className="block mt-2 text-sm text-slate-400">#OpenToWork</span>
