@@ -182,6 +182,7 @@ function useTypingTest(): TypingTestState {
     } finally {
       setIsLoading(false);
     }
+    setTimeout(() => document.getElementById('main-text')?.focus(), 100);
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>): void {
@@ -302,11 +303,7 @@ function useTypingTest(): TypingTestState {
 }
 
 function useFocusManagement(inputRef: React.RefObject<HTMLTextAreaElement | null>, status: 'waiting' | 'typing' | 'finished'): void {
-  useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, []);
+  useEffect(() => inputRef.current?.focus(), []);
 
   useEffect(() => {
     if (status !== 'finished' && inputRef.current) {
@@ -548,6 +545,7 @@ function TypingTest() {
               </AnimatePresence>
             )}
             <textarea
+              id="main-text"
               ref={inputRef}
               value={input}
               onChange={handleInputChange}
