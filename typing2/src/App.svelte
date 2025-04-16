@@ -2,7 +2,7 @@
   let tokens: string[] = $state([]);
 
   let chars = $derived(tokenToChars(tokens));
-  let rows = $derived(createRows(chars));
+  let gridItems = $derived(createGridItems(chars));
   let correct = $derived(chars.map(_ => false));
   let index = $state(0);
 
@@ -135,99 +135,174 @@
     idx: number;
   }
 
-  function createRows(chars: string[]): RowItem[][] {
+  function createGridItems(chars: string[]): RowItem[][] {
     let rows: RowItem[][] = [];
     let index = 0;
+    let maxWidth = 0;
     while (true) {
       let row: RowItem[] = [];
       for (let i = 0; i < 128 && index < chars.length; i++) {
         if (chars[index] == '\n') {
-          row.push( { idx: index, char: '\\n' })
+          row.push({ idx: index, char: ' ' });
           index++;
           break;
         }
         row.push({ idx: index, char: chars[index] });
         index++;
       }
+      if (row.length > maxWidth) maxWidth = row.length;
       rows.push(row);
       if (index == chars.length) break;
     }
 
+    // pad the rows to the max width
+    for (let i = 0; i < rows.length; i++) {
+      while (rows[i].length < maxWidth) {
+        rows[i].push({ idx: -1, char: ' ' });
+      }
+    }
+
+
     return rows;
+  }
+
+  function gridColTemplate(items: RowItem[][]): string {
+    if (items.length == 0) return '';
+    let ret = '';
+    for (let i = 0; i < items[0].length; i++) {
+      ret += 'auto ';
+    }
+    return ret;
+  }
+
+  function gridRowTemplate(items: RowItem[][]): string {
+    let ret = '';
+    for (let i = 0; i < items.length; i++) {
+      ret += 'auto ';
+    }
+    return ret;
+  }
+
+  function calcCursorX(index: number, items: RowItem[][]): number {
+    for (let i = 0; i < items.length; i++) {
+      for (let j = 0; j < items[i].length; j++) {
+        if (index == items[i][j].idx) return 18 + j * 9.5;
+      }
+    }
+    return 0;
+  }
+  
+  function calcCursorY(index: number, items: RowItem[][]): number {
+    for (let i = 0; i < items.length; i++) {
+      for (let j = 0; j < items[i].length; j++) {
+        if (index == items[i][j].idx) return 20 + i * 26;
+      }
+    }
+    return 0;
   }
 </script>
 
 <main> 
   <div id="grid">
-    <div id="content-box" tabindex="0" role="none" onkeydown={keyPress}>
-      <div id="main-content">
-        {#each rows as row}
-          {#each row as char}
-            {#if index == char.idx}<span id="cursor"></span>
-            {/if}<span class={
-              (char.idx < index ? 'written' : 'remaining') +
-              ' ' + (correct[char.idx] ? 'correct' : 'incorrect')
-            }>{char.char}</span>
-          {/each}
-          <br/>
-        {/each}
-      </div>
-    </div>
-    <div>
-      <p>Missed Tokens</p>
+    <!--><div>
+      <p>Boosted Tokens</p>
         {#each topKMissedTokensDisplay as token}
           <p><span>{token.token}</span> <span>{token.missed}</span></p>
         {/each}
-    </div>
-    <div id="controls">
-      <button id="next" onclick={nextTest}>next</button>
-      <button onclick={repeatTest}>repeat</button>
-      <div>CPM: {cpm.toFixed(2)}</div>
-      <div>Accuracy: {accuracy.toFixed(2)}</div>
+    </div><!-->
+    <div>
+      <div id="content-box" tabindex="0" role="none" onkeydown={keyPress}>
+        <div id="cursor" style={
+          `left: ${calcCursorX(index, gridItems)}px; top: ${calcCursorY(index, gridItems)}px;`
+        }></div>
+        <div id="main-content" style={
+          `grid-template-columns: ${gridColTemplate(gridItems)};
+          grid-template-rows: ${gridRowTemplate(gridItems)};`
+        }>
+          {#each gridItems as row}
+            {#each row as char}
+              <span class={ 'char ' + 
+                (char.idx < index ? 'written' : 'remaining') +
+                ' ' + (correct[char.idx] ? 'correct' : 'incorrect')
+              }>{char.char}</span>
+            {/each}
+          {/each}
+        </div>
+      </div>
+      <div id="controls">
+        <button id="next" onclick={nextTest}>next</button>
+        <button onclick={repeatTest}>repeat</button>
+      </div>
     </div>
 
+    <div class="stat-container">
+      <div class="stat">CPM: {cpm.toFixed(2)}</div>
+      <div class="stat accuracy">Acc: {accuracy.toFixed(2)}</div>
+    </div>
   </div>
 </main>
 
 <style>
   #cursor {
-    position: absolute;
     width: 1px;
     height: 16px;
+    z-index: 2; 
     background-color: white;
-    transform: translate(0px, 6px)
+    position: absolute;
   }
 
   p {
     margin: 0px;
   }
 
+  .stat-container {
+    width: 100px;
+  }
+
+  .stat {
+    text-align: left;
+    padding-left: 16px;
+  }
+
   #grid {
     display: grid;
-    grid-template-columns: 1fr auto; 
+    grid-template-columns: auto 1fr auto; 
   }
   
   #controls {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    width: 100%;
+    grid-template-columns: 1fr 1fr;
     align-items: center;
     grid-column: 1 / 3;
   }
   
   main {
-    width: 80vw;
-    max-width: 1280px; 
+    margin: auto;
   }
 
   #content-box {
+    position: relative;
+    left: 0;
+    right: 0;
     padding: 16px;
     border: 1px solid black;
+    height: 40vh;
   } 
 
   #main-content {
-    text-align: left;
+    min-width: 60vw;
+    justify-content: start;
+    align-content: start; 
+    display: grid;
+    gap: 0;
     font-size: 16px;
-    width: 100%;
+    font-family: monospace;
+  }
+
+  .char {
+    width: 9.5px; 
+    height: 26px; 
   }
 
   .written {
