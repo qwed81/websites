@@ -224,6 +224,18 @@ function ProjectsSection() {
       image: "/faceswap.jpeg",
       link: "https://faceswap.smartfellas.us"
     },
+    {
+      title: "Takara Basswood",
+      description: "A fresh coat of paint for a new Japanese restaurant in Fort Worth, TX. Our website is optimized to be fast to load, and exceptionally easy to use.",
+      technologies: [
+        { name: "Svelte", icon: <Si.SiSvelte size={16} /> },
+        { name: "Node.js", icon: <Si.SiNodedotjs size={16} /> },
+        { name: "Cloudflare", icon: <Si.SiCloudflare size={16} /> },
+        { name: "TypeScript", icon: <Si.SiTypescript size={16} /> },
+      ],
+      image: "/takara.png",
+      link: "https://takarabasswood.com"
+    }
   ];
 
   return (
